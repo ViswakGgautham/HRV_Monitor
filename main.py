@@ -111,7 +111,27 @@ def calculate_hrv(ppi_list_processed):
     return (mean_ppi, mean_hr, sdnn, rmssd)
 
 
+pages = [    {        'title': 'HRV Analysis',
+                      'subtitle': 'Local',
+                      'lines': [
+                          "Mean PPI: {:.2f} ms".format(mean_ppi),
+                          "Mean HR: {:.2f} bpm".format(mean_hr),
+                          "SDNN: {:.2f} ms".format(sdnn),
+                          "RMSSD: {:.2f} ms".format(rmssd)        ]
+    },
+    {
+        'title': 'HRV Analysis',
+        'subtitle': 'Kubios Online',
+        'lines': [
+            "SDNN ms: {:.2f}".format(sdnn_kubios_ms),
+            "RMSSD ms: {:.2f}".format(rmssd_kubios_ms),
+            "SNS : {:.2f}".format(pns_index),
+            "PNS : {:.2f}".format(sns_index)
+        ]
+    }
+]
 
+current_page = 0
 
 
 current_page = 0
