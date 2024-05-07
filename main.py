@@ -15,13 +15,36 @@ height = 64
 i2c = machine.I2C(1,sda=machine.Pin(14), scl=machine.Pin(15), freq=400000)
 oled = SSD1306_I2C(width, height, i2c)
 
-
+# Entering network credentials
+ssid = "Enter your network ssid"
+password = 'Enter your network password'
 
 
 counter_1 = 0
 max_limits = 5
 
-
+# Connecting Pico W to the internet
+def connect():
+    
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    wlan.connect(ssid, password)
+    info = wlan.ifconfig()
+    while wlan.isconnected() == False:
+        print('Waiting for connection...')
+        oled.text('Waiting for connection...', 0, 10, 10)
+        oled.show()
+        sleep(1)
+    if wlan.isconnected() == True:
+        oled.text("Connected", 25, 15, 1)
+        print(info[0])
+        #oled.fill(0)
+        oled.text(str(info[0]), 5, 30, 1)
+        oled.show() 
+try:
+    connect()
+except KeyboardInterrupt:
+    machine.reset()
 
 # Taking ADC values and calculating Peak-to-Peak intervals (PPIs) and Heart rate.                    
 sample_list = Fifo (1500)
@@ -111,6 +134,60 @@ def calculate_hrv(ppi_list_processed):
     return (mean_ppi, mean_hr, sdnn, rmssd)
 
 
+
+# credentials for Connecting Pico W to Kubios Cloud API.
+APIKEY = "pbZRUi49X48I56oL1Lq8y8NDjq6rPfzX3AQeNo3a"
+CLIENT_ID = "3pjgjdmamlj759te85icf0lucv"
+CLIENT_SECRET = "111fqsli1eo7mejcrlffbklvftcnfl4keoadrdv1o45vt9pndlef"
+LOGIN_URL = "https://kubioscloud.auth.eu-west-1.amazoncognito.com/login"
+TOKEN_URL = "https://kubioscloud.auth.eu-west-1.amazoncognito.com/oauth2/token"
+REDIRECT_URI = "https://analysis.kubioscloud.com/v1/portal/login"
+
+
+# Using RESTFUL and posting that uses HTTP requestes to access and use data.
+response = requests.post(
+    url=TOKEN_URL,
+    data='grant_type=client_credentials&client_id={}'.format(CLIENT_ID),
+    headers={'Content-Type': 'application/x-www-form-urlencoded'},
+    auth=(CLIENT_ID, CLIENT_SECRET)
+)
+response = response.json()
+access_token = response["access_token"]
+
+intervals = ppi_list_processed
+data_set = {
+    "type": "RRI",
+    "data": intervals,
+    "analysis": {
+        "type": "readiness"
+    }
+}
+
+
+response = requests.post(
+    url="https://analysis.kubioscloud.com/v2/analytics/analyze",
+    headers={
+        "Authorization": "Bearer {}".format(access_token),
+        "X-Api-Key": APIKEY
+    },
+    json=data_set
+)
+response = response.json()
+#print(response)
+
+
+pns_index = response['analysis']['pns_index']
+sns_index = response['analysis']['sns_index']
+print("SNS value_Kubios: ", sns_index)
+print("PNS value_kubios: ", pns_index)
+
+
+sdnn_kubios_ms = response['analysis']['sdnn_ms']
+rmssd_kubios_ms = response['analysis']['rmssd_ms']
+mean_ppi, mean_hr, sdnn, rmssd = calculate_hrv(ppi_list)
+
+import time
+
 pages = [    {        'title': 'HRV Analysis',
                       'subtitle': 'Local',
                       'lines': [
@@ -133,9 +210,6 @@ pages = [    {        'title': 'HRV Analysis',
 
 current_page = 0
 
-
-current_page = 0
-
 # Printings the Pages on the display.
 while True:
     oled.fill(0)
@@ -147,4 +221,3 @@ while True:
     oled.show()
     time.sleep(5)
     current_page = (current_page + 1) % len(pages)
-
