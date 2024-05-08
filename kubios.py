@@ -66,7 +66,7 @@ def measure_hr():
             if len(sample_list) >= 750:
                 max_value = max(sample_list)
                 min_value = min(sample_list)
-                threshold = (4 * max_value +   min_value) / 5
+                threshold = (4 * max_value + min_value) / 5
 
                 for i in sample_list:
                     if i >= threshold and i > max_sample:
@@ -77,7 +77,7 @@ def measure_hr():
                             peakcounts.append(index)
                             max_sample = 0
                         except ValueError:
-                            print("Recalibrating")
+                            print("Please put the sensor back on your pulse and wait for recalibration (10 seconds)")
                             oled.fill(0)
                             oled.text("Pulse not detected", 0, 30, 1)
                             oled.show()
@@ -132,8 +132,4 @@ def measure_hr():
 
 # Call the measure_hr function to measure heart rate
 measure_hr()
-
-
-
-
 
